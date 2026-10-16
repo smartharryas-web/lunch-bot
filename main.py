@@ -9,8 +9,18 @@ from fastapi import FastAPI
 
 from weather import weather_text
 
+from ai import ask_ai
+from prompts import SYSTEM_PROMPT_V1
+
+from ai import ask_ai
+from places import load_places, search
+from prompts import build_prompt_v3
+from weather import get_weather, describe, weather_text
+
 import db
 conn = db.connect()  # DB 연결
+
+PLACES = load_places("places_sample.csv")  # 캠퍼스 주변 식당 목록 읽기
 
 load_dotenv()
 URL = f"https://api.telegram.org/bot{os.getenv('TELEGRAM_TOKEN')}"
@@ -35,7 +45,7 @@ def webhook(body: dict):
     if text == "/start":
         output = "안녕하세요! 오늘 뭐 먹지? 봇입니다. /help 로 사용법을 보세요."
     elif text == "/help":
-        output = "/lunch 점심 메뉴 하나\n/lotto 로또 번호 6개\n/weather 지금 캠퍼스 날씨\n/ate 먹은 메뉴 기록, /history 최근 기록\n그 밖의 말은 따라 해요"
+        output = "/lunch 점심 메뉴 하나\n/lotto 로또 번호 6개\n/weather 지금 캠퍼스 날씨\n/ate 먹은 메뉴 기록, /history 최근 기록\n그 밖의 말은 AI가 대답해요."
     elif text == "/lunch":
         output = random.choice(MENUS)
     elif text == "/lotto":
@@ -54,7 +64,12 @@ def webhook(body: dict):
     elif text.startswith("/"):
         output = "모르는 명령이에요. /help 를 보내 보세요."
     else:
-        output = text  # 메아리
+        weather = get_weather()
+        weather_line = describe(weather) if weather else "날씨 정보 없음"
+        meals = db.recent_meals(conn)
+        found = search(text, PLACES)
+        system = build_prompt_v3(weather_line, meals, found)
+        output = ask_ai(system, text)
 
     requests.get(f"{URL}/sendMessage", params={"chat_id": chat_id, "text": output})  # 답장 보내기
     print("[보냄]", output)
