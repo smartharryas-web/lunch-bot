@@ -45,7 +45,7 @@ def webhook(body: dict):
     if text == "/start":
         output = "안녕하세요! 오늘 뭐 먹지? 봇입니다. /help 로 사용법을 보세요."
     elif text == "/help":
-        output = "/lunch 점심 메뉴 하나\n/lotto 로또 번호 6개\n/weather 지금 캠퍼스 날씨\n/ate 먹은 메뉴 기록, /history 최근 기록\n그 밖의 말은 AI가 대답해요."
+        output = "/lunch 점심 메뉴 하나\n/lotto 로또 번호 6개\n/weather 지금 캠퍼스 날씨\n/ate 먹은 메뉴 기록, /history 최근 기록\n/dice 주사위 굴리기\n그 밖의 말은 AI가 대답해요."
     elif text == "/lunch":
         output = random.choice(MENUS)
     elif text == "/lotto":
@@ -54,6 +54,8 @@ def webhook(body: dict):
         output = "이번 주 행운의 번호: " + ", ".join(str(n) for n in numbers)
     elif text == "/weather":
         output = weather_text()
+    elif text == "/dice":
+        output = f"주사위: {random.randint(1, 6)}"
     elif text.startswith("/ate "):
         menu = text[len("/ate "):].strip()   # "/ate 김치찌개" → "김치찌개"
         db.save_meal(conn, menu, db.now())
