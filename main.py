@@ -9,6 +9,9 @@ from fastapi import FastAPI
 
 from weather import weather_text
 
+import db
+conn = db.connect()  # DB 연결
+
 load_dotenv()
 URL = f"https://api.telegram.org/bot{os.getenv('TELEGRAM_TOKEN')}"
 
@@ -32,7 +35,7 @@ def webhook(body: dict):
     if text == "/start":
         output = "안녕하세요! 오늘 뭐 먹지? 봇입니다. /help 로 사용법을 보세요."
     elif text == "/help":
-        output = "/lunch 점심 메뉴 하나\n/lotto 로또 번호 6개\n/weather 지금 캠퍼스 날씨\n그 밖의 말은 따라 해요"
+        output = "/lunch 점심 메뉴 하나\n/lotto 로또 번호 6개\n/weather 지금 캠퍼스 날씨\n/ate 먹은 메뉴 기록, /history 최근 기록\n그 밖의 말은 따라 해요"
     elif text == "/lunch":
         output = random.choice(MENUS)
     elif text == "/lotto":
@@ -41,6 +44,13 @@ def webhook(body: dict):
         output = "이번 주 행운의 번호: " + ", ".join(str(n) for n in numbers)
     elif text == "/weather":
         output = weather_text()
+    elif text.startswith("/ate "):
+        menu = text[len("/ate "):].strip()   # "/ate 김치찌개" → "김치찌개"
+        db.save_meal(conn, menu, db.now())
+        output = f"{menu} 기록했어요!"
+    elif text == "/history":
+        rows = db.recent_meals(conn)
+        output = "\n".join(f"{t} {m}" for t, m in rows) or "아직 기록이 없어요."
     elif text.startswith("/"):
         output = "모르는 명령이에요. /help 를 보내 보세요."
     else:
